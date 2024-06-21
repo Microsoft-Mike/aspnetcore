@@ -12,6 +12,7 @@ internal class MinimumAgePolicyProvider : IAuthorizationPolicyProvider
 {
     const string POLICY_PREFIX = "MinimumAge";
     public DefaultAuthorizationPolicyProvider FallbackPolicyProvider { get; }
+    private readonly IDictionary<int, AuthorizationPolicy> AuthorizationPolicyCache;
 
     public MinimumAgePolicyProvider(IOptions<AuthorizationOptions> options)
     {
@@ -26,6 +27,11 @@ internal class MinimumAgePolicyProvider : IAuthorizationPolicyProvider
         // If a custom policy provider is able to handle all expected policy names then, of course, this
         // fallback pattern is unnecessary.
         FallbackPolicyProvider = new DefaultAuthorizationPolicyProvider(options);
+
+        // The same MinimumAge might be specified for many endpoints.
+        // This PolicyProvider is registered as a Singleton, so it can maintain a cache of built Policies keyed on the MinimumAge.
+        // Use the same AuthorizationPolicy instance for all uses of the same MinimumAge
+        AuthorizationPolicyCache = new Dictionary<int, AuthorizationPolicy>();
     }
 
     public Task<AuthorizationPolicy> GetDefaultPolicyAsync() => FallbackPolicyProvider.GetDefaultPolicyAsync();
@@ -41,9 +47,18 @@ internal class MinimumAgePolicyProvider : IAuthorizationPolicyProvider
         if (policyName.StartsWith(POLICY_PREFIX, StringComparison.OrdinalIgnoreCase) &&
             int.TryParse(policyName.Substring(POLICY_PREFIX.Length), out var age))
         {
-            var policy = new AuthorizationPolicyBuilder();
-            policy.AddRequirements(new MinimumAgeRequirement(age));
-            return Task.FromResult(policy.Build());
+            lock(this)
+            {
+                if (AuthorizationPolicyCache.ContainsKey(age)) 
+                {
+                    return Task.FromResult(AuthorizationPolicy[age]);
+                }
+                var policy = new AuthorizationPolicyBuilder();
+                policy.AddRequirements(new MinimumAgeRequirement(age));
+                var builtPolicy = policy.Build();
+                AuthorizationPolicy.Add(age, builtPolicy);
+                return Task.FromResult(builtPolicy);
+            }
         }
 
         // If the policy name doesn't match the format expected by this policy provider,
