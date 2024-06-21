@@ -315,6 +315,10 @@
           "$ref": "#/components/schemas/int"
         }
       },
+      "double": {
+        "type": "number",
+        "format": "double"
+      },
       "int": {
         "type": "integer",
         "format": "int32"
@@ -334,7 +338,18 @@
         "type": "string"
       },
       "Triangle": {
-        "type": "object"
+        "type": "object",
+        "properties": {
+          "hypotenuse": {
+            "$ref": "#/components/schemas/double"
+          },
+          "color": {
+            "$ref": "#/components/schemas/string"
+          },
+          "sides": {
+            "$ref": "#/components/schemas/int"
+          }
+        }
       }
     }
   },

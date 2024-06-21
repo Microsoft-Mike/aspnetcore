@@ -91,7 +91,7 @@ responses.MapGet("/200-only-xml", () => new TodoWithDueDate(1, "Test todo", fals
     .Produces<Todo>(contentType: "text/xml");
 
 responses.MapGet("/triangle", () => new Triangle { Color = "red", Sides = 3, Hypotenuse = 5.0 });
-responses.MapGet("/shape", () => new Shape { Color = "blue", Sides = 4 });
+responses.MapGet("/shape", Shape () => new Triangle { Color = "blue", Sides = 4 });
 
 schemas.MapGet("/typed-results", () => TypedResults.Ok(new Triangle { Color = "red", Sides = 3, Hypotenuse = 5.0 }));
 schemas.MapGet("/multiple-results", Results<Ok<Triangle>, NotFound<string>> () => Random.Shared.Next(0, 2) == 0
